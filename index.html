@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSCIST Course Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A41;
+    --ink-2:#28405f;
+    --parchment:#F3EEE3;
+    --parchment-dark:#E8DFC9;
+    --card:#FBF8F1;
+    --brass:#B08D57;
+    --brass-dark:#8f7040;
+    --maroon:#7A2E2E;
+    --success:#3F6B4E;
+    --slate:#5B6472;
+    --line: rgba(27,42,65,0.12);
+    --font-display:'Fraunces', serif;
+    --font-body:'IBM Plex Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --shadow: 0 6px 20px rgba(27,42,65,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    background:
+      linear-gradient(180deg, rgba(27,42,65,0.02), rgba(27,42,65,0)) ,
+      var(--parchment);
+    color:var(--ink);
+    min-height:100vh;
+    background-image:
+      repeating-linear-gradient(180deg, transparent, transparent 27px, var(--line) 28px);
+  }
+  ::selection{ background: var(--brass); color:#fff; }
+
+  /* ---------- Layout ---------- */
+  .app{ display:flex; min-height:100vh; }
+
+  .sidebar{
+    width:250px; flex-shrink:0;
+    background: var(--ink);
+    color:#EFE9DA;
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{
+    padding:26px 22px 18px;
+    border-bottom:1px solid rgba(239,233,218,0.14);
+  }
+  .brand .mark{
+    font-family:var(--font-display); font-weight:700; font-size:22px; letter-spacing:0.3px;
+    color:#EFE9DA;
+  }
+  .brand .sub{
+    font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--brass); margin-top:4px;
+  }
+  .navlist{ list-style:none; margin:14px 0; padding:0; flex:1; }
+  .navlist li{ margin:0; }
+  .navlink{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 22px; cursor:pointer;
+    color:#c9c2ac; font-size:14.5px; font-weight:500;
+    border-left:3px solid transparent;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    position:relative;
+  }
+  .navlink .rn{
+    font-family:var(--font-mono); font-size:11px; color:var(--brass-dark);
+    width:20px; flex-shrink:0;
+  }
+  .navlink:hover{ background:rgba(239,233,218,0.06); color:#EFE9DA; }
+  .navlink.active{
+    background:rgba(176,141,87,0.14); color:#fff; border-left-color:var(--brass);
+  }
+  .navlink.active .rn{ color:var(--brass); }
+  .sidebar-foot{
+    padding:16px 22px 22px; font-family:var(--font-mono); font-size:10.5px;
+    color:#8b8570; border-top:1px solid rgba(239,233,218,0.14); line-height:1.6;
+  }
+
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 34px; border-bottom:1px solid var(--line);
+    background:rgba(251,248,241,0.6); backdrop-filter: blur(2px);
+  }
+  .topbar h1{
+    font-family:var(--font-display); font-weight:600; font-size:24px; margin:0;
+  }
+  .topbar .stamp-date{
+    font-family:var(--font-mono); font-size:11.5px; color:var(--slate); letter-spacing:0.5px;
+  }
+
+  .content{ padding:30px 34px 60px; flex:1; }
+  .section{ display:none; animation: pageIn .35s ease; }
+  .section.active{ display:block; }
+  @keyframes pageIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){
+    .section{ animation:none; }
+    *{ transition:none !important; animation-duration:0.001ms !important; }
+  }
+
+  /* ---------- Cards / stat tiles ---------- */
+  .grid-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:28px; }
+  @media (max-width:900px){ .grid-stats{ grid-template-columns:repeat(2,1fr); } }
+  .stat-card{
+    background:var(--card); border:1px solid var(--line); border-radius:2px;
+    padding:18px 18px 16px; position:relative; box-shadow:var(--shadow);
+  }
+  .stat-card::before{
+    content:''; position:absolute; top:0; left:0; width:26px; height:26px;
+    background: linear-gradient(135deg, var(--brass) 50%, transparent 50%);
+    opacity:0.85;
+  }
+  .stat-card .num{ font-family:var(--font-display); font-size:32px; font-weight:600; margin-top:6px;}
+  .stat-card .lbl{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--slate); }
+
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:2px; box-shadow:var(--shadow);
+    margin-bottom:26px;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    padding:18px 22px; border-bottom:1px solid var(--line);
+  }
+  .panel-head h2{ font-family:var(--font-display); font-size:19px; margin:0; font-weight:600; }
+  .panel-body{ padding:20px 22px 24px; }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:var(--font-body); font-weight:600; font-size:13px; letter-spacing:0.2px;
+    padding:9px 16px; border-radius:2px; border:1px solid transparent; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px; transition:transform .1s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-brass{ background:var(--brass); color:#fff; }
+  .btn-brass:hover{ background:var(--brass-dark); }
+  .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line); }
+  .btn-ghost:hover{ background:rgba(27,42,65,0.05); }
+  .btn-danger{ background:transparent; color:var(--maroon); border-color:rgba(122,46,46,0.35); }
+  .btn-danger:hover{ background:rgba(122,46,46,0.08); }
+  .btn-sm{ padding:6px 11px; font-size:12px; }
+  .icon-btn{
+    background:transparent; border:1px solid var(--line); border-radius:2px; cursor:pointer;
+    width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center;
+    color:var(--ink); font-size:14px;
+  }
+  .icon-btn:hover{ background:rgba(27,42,65,0.06); }
+  .icon-btn.danger{ color:var(--maroon); border-color:rgba(122,46,46,0.3); }
+  .icon-btn.danger:hover{ background:rgba(122,46,46,0.07); }
+
+  /* ---------- Search ---------- */
+  .search-box{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff;
+    padding:7px 12px; border-radius:2px; min-width:220px;
+  }
+  .search-box input{
+    border:none; outline:none; font-family:var(--font-body); font-size:13px; width:100%; background:transparent;
+  }
+  .search-box svg{ flex-shrink:0; opacity:0.55; }
+
+  /* ---------- Tables ---------- */
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase;
+    letter-spacing:1px; color:var(--slate); padding:0 12px 10px; border-bottom:1.5px solid var(--ink);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:13px 12px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;
+  }
+  tbody tr:hover{ background:rgba(176,141,87,0.06); }
+  .cell-strong{ font-weight:600; }
+  .cell-muted{ color:var(--slate); font-size:12.5px; }
+  .mono{ font-family:var(--font-mono); font-size:12px; }
+  .empty-row td{ text-align:center; padding:34px 12px; color:var(--slate); font-style:italic; }
+  .table-scroll{ overflow-x:auto; }
+
+  .pill{
+    display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;
+    font-family:var(--font-mono); letter-spacing:0.4px;
+  }
+  .pill-brass{ background:rgba(176,141,87,0.16); color:var(--brass-dark); }
+  .pill-ink{ background:rgba(27,42,65,0.09); color:var(--ink); }
+  .pill-maroon{ background:rgba(122,46,46,0.1); color:var(--maroon); }
+  .pill-success{ background:rgba(63,107,78,0.12); color:var(--success); }
+
+  .row-actions{ display:flex; gap:6px; }
+
+  /* ---------- Grade Stamp (signature element) ---------- */
+  .stamp{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:46px; height:46px; border-radius:50%;
+    border:2.5px solid currentColor; font-family:var(--font-display); font-weight:700; font-size:15px;
+    transform:rotate(-8deg); position:relative; letter-spacing:0.5px;
+  }
+  .stamp::after{
+    content:''; position:absolute; inset:4px; border:1px solid currentColor; border-radius:50%; opacity:0.5;
+  }
+  .stamp-Aplus, .stamp-A{ color:var(--success); }
+  .stamp-B{ color:var(--brass-dark); }
+  .stamp-C{ color:#8a6d1f; }
+  .stamp-D{ color:var(--maroon); opacity:0.85; }
+  .stamp-F{ color:var(--maroon); }
+
+  /* ---------- Forms / Modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(27,42,65,0.45); display:none;
+    align-items:flex-start; justify-content:center; z-index:100; padding:40px 16px; overflow-y:auto;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--card); width:100%; max-width:520px; border-radius:3px; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    border:1px solid var(--line); animation:modalIn .2s ease;
+  }
+  @keyframes modalIn{ from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
+  .modal-head{
+    padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;
+  }
+  .modal-head h3{ font-family:var(--font-display); font-size:18px; margin:0; font-weight:600; }
+  .modal-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--slate); line-height:1; }
+  .modal-body{ padding:20px 22px; max-height:60vh; overflow-y:auto; }
+  .modal-foot{ padding:16px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:0.8px;
+    color:var(--slate); margin-bottom:6px;
+  }
+  .field input, .field select, .field textarea{
+    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:2px; font-family:var(--font-body);
+    font-size:13.5px; background:#fff; color:var(--ink); outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brass); box-shadow:0 0 0 3px rgba(176,141,87,0.15); }
+  .field textarea{ resize:vertical; min-height:70px; }
+  .field-error{ color:var(--maroon); font-size:11.5px; margin-top:5px; display:none; }
+  .field.has-error input, .field.has-error select{ border-color:var(--maroon); }
+  .field.has-error .field-error{ display:block; }
+  .checklist{
+    display:flex; flex-direction:column; gap:8px; max-height:170px; overflow-y:auto;
+    border:1px solid var(--line); padding:10px 12px; border-radius:2px; background:#fff;
+  }
+  .checklist label{
+    display:flex; align-items:center; gap:9px; font-family:var(--font-body); font-size:13px; text-transform:none;
+    letter-spacing:0; color:var(--ink); cursor:pointer;
+  }
+  .checklist input{ width:auto; accent-color:var(--brass); }
+  .checklist .empty{ color:var(--slate); font-style:italic; font-size:12.5px; }
+
+  /* ---------- Results workbench ---------- */
+  .wb-controls{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+  .wb-controls .field{ margin:0; min-width:220px; flex:1; }
+  .marks-input{ width:80px; padding:6px 8px; border:1px solid var(--line); border-radius:2px; font-family:var(--font-mono); }
+  .pct-bar-track{ background:var(--parchment-dark); height:6px; border-radius:4px; width:100px; overflow:hidden; }
+  .pct-bar-fill{ height:100%; background:var(--brass); }
+
+  /* ---------- Toast ---------- */
+  #toastWrap{ position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:200; }
+  .toast{
+    background:var(--ink); color:#EFE9DA; padding:12px 18px; border-radius:2px; font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25); border-left:3px solid var(--brass); animation:toastIn .25s ease;
+    max-width:300px;
+  }
+  .toast.danger{ border-left-color:var(--maroon); }
+  @keyframes toastIn{ from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);} }
+
+  /* ---------- Mobile ---------- */
+  .menu-toggle{ display:none; }
+  @media (max-width: 880px){
+    .sidebar{ position:fixed; z-index:90; transform:translateX(-100%); transition:transform .2s ease; }
+    .sidebar.open{ transform:translateX(0); }
+    .menu-toggle{
+      display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px;
+      border:1px solid var(--line); background:#fff; border-radius:2px; cursor:pointer; margin-right:12px;
+    }
+    .topbar{ padding:18px 18px; }
+    .content{ padding:20px 16px 50px; }
+    .grid-stats{ grid-template-columns:1fr 1fr; }
+  }
+
+  a{ color:inherit; }
+  :focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">BSCIST Course Management</div>
+      <div class="sub">BCA III YR</div>
+    </div>
+    <ul class="navlist" id="navlist">
+      <li><div class="navlink active" data-section="dashboard"><span class="rn">I.</span> Dashboard</div></li>
+      <li><div class="navlink" data-section="courses"><span class="rn">II.</span> Courses</div></li>
+      <li><div class="navlink" data-section="students"><span class="rn">III.</span> Students</div></li>
+      <li><div class="navlink" data-section="faculty"><span class="rn">IV.</span> Faculty</div></li>
+      <li><div class="navlink" data-section="assignments"><span class="rn">V.</span> Assignments</div></li>
+      <li><div class="navlink" data-section="results"><span class="rn">VI.</span> Results</div></li>
+    </ul>
+    <div class="sidebar-foot">
+      IN-MEMORY SESSION<br>Data resets on reload
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center;">
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+        <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="stamp-date" id="stampDate"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <section class="section active" id="sec-dashboard">
+        <div class="grid-stats" id="statGrid"></div>
+        <div class="panel">
+          <div class="panel-head"><h2>Recent Entries</h2></div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Type</th><th>Detail</th><th>Timestamp</th></tr></thead>
+                <tbody id="recentBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COURSES -->
+      <section class="section" id="sec-courses">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Course Catalog</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="courseSearch" placeholder="Search courses…">
+              </div>
+              <button class="btn btn-brass" id="addCourseBtn">+ New Course</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Code</th><th>Course Name</th><th>Credits</th><th>Faculty</th><th>Enrolled</th><th></th></tr></thead>
+                <tbody id="coursesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STUDENTS -->
+      <section class="section" id="sec-students">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Student Roster</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="studentSearch" placeholder="Search students…">
+              </div>
+              <button class="btn btn-brass" id="addStudentBtn">+ New Student</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Roll No.</th><th>Name</th><th>Email</th><th>Courses Enrolled</th><th></th></tr></thead>
+                <tbody id="studentsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FACULTY -->
+      <section class="section" id="sec-faculty">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Faculty Directory</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="facultySearch" placeholder="Search faculty…">
+              </div>
+              <button class="btn btn-brass" id="addFacultyBtn">+ New Faculty</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Name</th><th>Department</th><th>Email</th><th>Courses Taught</th><th></th></tr></thead>
+                <tbody id="facultyBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ASSIGNMENTS -->
+      <section class="section" id="sec-assignments">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Assignments</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="assignmentSearch" placeholder="Search assignments…">
+              </div>
+              <button class="btn btn-brass" id="addAssignmentBtn">+ New Assignment</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Title</th><th>Course</th><th>Due Date</th><th>Max Marks</th><th>Graded</th><th></th></tr></thead>
+                <tbody id="assignmentsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="section" id="sec-results">
+        <div class="panel">
+          <div class="panel-head"><h2>Grading Workbench</h2></div>
+          <div class="panel-body">
+            <div class="wb-controls">
+              <div class="field">
+                <label>Course</label>
+                <select id="wbCourse"></select>
+              </div>
+              <div class="field">
+                <label>Assignment</label>
+                <select id="wbAssignment"></select>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Roll No.</th><th>Student</th><th>Marks Obtained</th><th>%</th><th>Grade</th></tr></thead>
+                <tbody id="wbBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:16px; text-align:right;">
+              <button class="btn btn-brass" id="saveResultsBtn">Save Results</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Result Ledger</h2>
+            <div class="search-box">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="resultSearch" placeholder="Search results…">
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Student</th><th>Course</th><th>Assignment</th><th>Marks</th><th>Grade</th><th></th></tr></thead>
+                <tbody id="resultsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Title</h3>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn btn-brass" id="modalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="modal-backdrop" id="confirmBackdrop">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head"><h3>Confirm</h3><button class="modal-close" id="confirmClose">&times;</button></div>
+    <div class="modal-body" id="confirmBody">Are you sure?</div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk" style="background:var(--maroon); color:#fff; border-color:var(--maroon);">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+
+<script>
+/* ============================ STATE ============================ */
+let uidCounter = 1000;
+const uid = (p) => p + '_' + (uidCounter++);
+
+const state = {
+  courses: [
+    { id:'c1', code:'CS101', name:'Introduction to Programming', credits:4, facultyId:'f1' },
+    { id:'c2', code:'MA201', name:'Linear Algebra', credits:3, facultyId:'f2' },
+    { id:'c3', code:'PH110', name:'Classical Mechanics', credits:3, facultyId:null },
+    { id:'c4', code:'CS310', name:'Database Systems', credits:4, facultyId:'f1' },
+  ],
+  students: [
+    { id:'s1', roll:'RID-24-001', name:'Ananya Rao', email:'ananya.rao@ridgeview.edu', enrolled:['c1','c2'] },
+    { id:'s2', roll:'RID-24-002', name:'Karthik Iyer', email:'karthik.iyer@ridgeview.edu', enrolled:['c1','c4'] },
+    { id:'s3', roll:'RID-24-003', name:'Meera Nair', email:'meera.nair@ridgeview.edu', enrolled:['c2','c3'] },
+    { id:'s4', roll:'RID-24-004', name:'Devansh Gupta', email:'devansh.gupta@ridgeview.edu', enrolled:['c1'] },
+  ],
+  faculty: [
+    { id:'f1', name:'Dr. Priya Menon', dept:'Computer Science', email:'p.menon@ridgeview.edu' },
+    { id:'f2', name:'Dr. Alan Fischer', dept:'Mathematics', email:'a.fischer@ridgeview.edu' },
+  ],
+  assignments: [
+    { id:'a1', courseId:'c1', title:'Loops & Control Flow Problem Set', due:'2026-09-10', max:50 },
+    { id:'a2', courseId:'c1', title:'Midterm Programming Exam', due:'2026-10-01', max:100 },
+    { id:'a3', courseId:'c2', title:'Matrix Operations Worksheet', due:'2026-09-15', max:40 },
+  ],
+  results: [
+    { id:'r1', studentId:'s1', assignmentId:'a1', marks:42 },
+    { id:'r2', studentId:'s2', assignmentId:'a1', marks:38 },
+    { id:'r3', studentId:'s4', assignmentId:'a1', marks:45 },
+  ],
+  activity: [],
+};
+
+function logActivity(type, detail){
+  state.activity.unshift({ type, detail, ts: new Date() });
+  state.activity = state.activity.slice(0, 12);
+}
+
+/* ============================ HELPERS ============================ */
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+function toast(msg, danger=false){
+  const wrap = $('#toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast' + (danger ? ' danger' : '');
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2600);
+}
+
+function fmtDate(d){
+  const dt = (d instanceof Date) ? d : new Date(d);
+  return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function fmtDateTime(d){
+  return d.toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+function courseName(id){
+  const c = state.courses.find(x=>x.id===id);
+  return c ? `${c.code} — ${c.name}` : '—';
+}
+function facultyName(id){
+  const f = state.faculty.find(x=>x.id===id);
+  return f ? f.name : null;
+}
+function studentEnrolledInCourse(courseId){
+  return state.students.filter(s => s.enrolled.includes(courseId));
+}
+
+function gradeFor(pct){
+  if(pct >= 90) return {letter:'A+', cls:'stamp-Aplus'};
+  if(pct >= 80) return {letter:'A', cls:'stamp-A'};
+  if(pct >= 70) return {letter:'B', cls:'stamp-B'};
+  if(pct >= 60) return {letter:'C', cls:'stamp-C'};
+  if(pct >= 50) return {letter:'D', cls:'stamp-D'};
+  return {letter:'F', cls:'stamp-F'};
+}
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ============================ NAVIGATION ============================ */
+const sectionTitles = {
+  dashboard:'Dashboard', courses:'Courses', students:'Students',
+  faculty:'Faculty', assignments:'Assignments', results:'Results'
+};
+
+function goSection(name){
+  $$('.navlink').forEach(el => el.classList.toggle('active', el.dataset.section === name));
+  $$('.section').forEach(el => el.classList.remove('active'));
+  $('#sec-' + name).classList.add('active');
+  $('#pageTitle').textContent = sectionTitles[name];
+  $('#sidebar').classList.remove('open');
+  renderAll();
+}
+
+$$('.navlink').forEach(el => el.addEventListener('click', () => goSection(el.dataset.section)));
+$('#menuToggle').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+
+function setStampDate(){
+  $('#stampDate').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+setStampDate();
+
+/* ============================ MODAL ENGINE ============================ */
+let modalOnSave = null;
+
+function openModal(title, bodyHtml, onSave){
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = bodyHtml;
+  modalOnSave = onSave;
+  $('#modalBackdrop').classList.add('open');
+}
+function closeModal(){
+  $('#modalBackdrop').classList.remove('open');
+  modalOnSave = null;
+}
+$('#modalClose').addEventListener('click', closeModal);
+$('#modalCancel').addEventListener('click', closeModal);
+$('#modalBackdrop').addEventListener('click', (e) => { if(e.target.id === 'modalBackdrop') closeModal(); });
+$('#modalSave').addEventListener('click', () => { if(modalOnSave) modalOnSave(); });
+
+let confirmOnOk = null;
+function openConfirm(msg, onOk){
+  $('#confirmBody').textContent = msg;
+  confirmOnOk = onOk;
+  $('#confirmBackdrop').classList.add('open');
+}
+function closeConfirm(){ $('#confirmBackdrop').classList.remove('open'); confirmOnOk = null; }
+$('#confirmClose').addEventListener('click', closeConfirm);
+$('#confirmCancel').addEventListener('click', closeConfirm);
+$('#confirmBackdrop').addEventListener('click', (e) => { if(e.target.id === 'confirmBackdrop') closeConfirm(); });
+$('#confirmOk').addEventListener('click', () => { if(confirmOnOk) confirmOnOk(); closeConfirm(); });
+
+function markError(fieldId, msg){
+  const field = document.getElementById('field-' + fieldId);
+  if(!field) return;
+  field.classList.add('has-error');
+  const err = field.querySelector('.field-error');
+  if(err) err.textContent = msg;
+}
+function clearErrors(){
+  $$('.field').forEach(f => f.classList.remove('has-error'));
+}
+
+/* ============================ COURSES ============================ */
+function courseFormHtml(c){
+  const facultyOptions = state.faculty.map(f => `<option value="${f.id}" ${c && c.facultyId===f.id ? 'selected':''}>${escapeHtml(f.name)}</option>`).join('');
+  return `
+    <div class="field" id="field-code">
+      <label>Course Code</label>
+      <input type="text" id="f-code" value="${c ? escapeHtml(c.code) : ''}" placeholder="e.g. CS101">
+      <div class="field-error">Course code is required.</div>
+    </div>
+    <div class="field" id="field-name">
+      <label>Course Name</label>
+      <input type="text" id="f-name" value="${c ? escapeHtml(c.name) : ''}" placeholder="e.g. Introduction to Programming">
+      <div class="field-error">Course name is required.</div>
+    </div>
+    <div class="field" id="field-credits">
+      <label>Credits</label>
+      <input type="number" id="f-credits" min="1" max="10" value="${c ? c.credits : 3}">
+      <div class="field-error">Enter a valid credit value (1–10).</div>
+    </div>
+    <div class="field">
+      <label>Assigned Faculty</label>
+      <select id="f-faculty">
+        <option value="">— Unassigned —</option>
+        ${facultyOptions}
+      </select>
+    </div>
+  `;
+}
+
+function openCourseModal(id=null){
+  const c = id ? state.courses.find(x=>x.id===id) : null;
+  openModal(c ? 'Edit Course' : 'New Course', courseFormHtml(c), () => {
+    clearErrors();
+    const code = $('#f-code').value.trim();
+    const name = $('#f-name').value.trim();
+    const credits = parseInt($('#f-credits').value, 10);
+    const facultyId = $('#f-faculty').value || null;
+    let ok = true;
+    if(!code){ markError('code','Course code is required.'); ok=false; }
+    if(!name){ markError('name','Course name is required.'); ok=false; }
+    if(!credits || credits < 1 || credits > 10){ markError('credits','Enter a valid credit value (1–10).'); ok=false; }
+    if(!ok) return;
+    if(c){
+      c.code=code; c.name=name; c.credits=credits; c.facultyId=facultyId;
+      logActivity('Course', `Updated ${code} — ${name}`);
+      toast('Course updated.');
+    } else {
+      const newC = { id: uid('c'), code, name, credits, facultyId };
+      state.courses.push(newC);
+      logActivity('Course', `Added ${code} — ${name}`);
+      toast('Course added.');
+    }
+    closeModal();
+    renderAll();
+  });
+}
+
+function deleteCourse(id){
+  const c = state.courses.find(x=>x.id===id);
+  openConfirm(`Delete "${c.code} — ${c.name}"? This will also remove its assignments, results, and unenroll all students.`, () => {
+    const affectedAssignments = state.assignments.filter(a=>a.courseId===id).map(a=>a.id);
+    state.results = state.results.filter(r => !affectedAssignments.includes(r.assignmentId));
+    state.assignments = state.assignments.filter(a => a.courseId !== id);
+    state.students.forEach(s => { s.enrolled = s.enrolled.filter(cid => cid !== id); });
+    state.courses = state.courses.filter(x => x.id !== id);
+    logActivity('Course', `Removed ${c.code}`);
+    toast('Course deleted.', true);
+    renderAll();
+  });
+}
+
+function renderCourses(){
+  const q = ($('#courseSearch').value || '').toLowerCase();
+  const body = $('#coursesBody');
+  const rows = state.courses.filter(c =>
+    c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
+  );
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No courses found. Try “+ New Course”.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(c => {
+    const fname = facultyName(c.facultyId);
+    const enrolledCount = studentEnrolledInCourse(c.id).length;
+    return `
+      <tr>
+        <td class="mono cell-strong">${escapeHtml(c.code)}</td>
+        <td>${escapeHtml(c.name)}</td>
+        <td class="mono">${c.credits}</td>
+        <td>${fname ? escapeHtml(fname) : '<span class="pill pill-maroon">Unassigned</span>'}</td>
+        <td><span class="pill pill-brass">${enrolledCount} student${enrolledCount!==1?'s':''}</span></td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" title="Edit" onclick="openCourseModal('${c.id}')">✎</button>
+            <button class="icon-btn danger" title="Delete" onclick="deleteCourse('${c.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+$('#addCourseBtn').addEventListener('click', () => openCourseModal());
+$('#courseSearch').addEventListener('input', renderCourses);
+
+/* ============================ STUDENTS ============================ */
+function studentFormHtml(s){
+  const checks = state.courses.map(c => `
+    <label>
+      <input type="checkbox" value="${c.id}" ${s && s.enrolled.includes(c.id) ? 'checked':''}>
+      ${escapeHtml(c.code)} — ${escapeHtml(c.name)}
+    </label>
+  `).join('') || '<div class="empty">No courses available yet.</div>';
+
+  return `
+    <div class="field" id="field-roll">
+      <label>Roll Number</label>
+      <input type="text" id="f-roll" value="${s ? escapeHtml(s.roll) : ''}" placeholder="e.g. RID-24-005">
+      <div class="field-error">Roll number is required.</div>
+    </div>
+    <div class="field" id="field-name">
+      <label>Full Name</label>
+      <input type="text" id="f-name" value="${s ? escapeHtml(s.name) : ''}" placeholder="e.g. Sara Thomas">
+      <div class="field-error">Name is required.</div>
+    </div>
+    <div class="field" id="field-email">
+      <label>Email</label>
+      <input type="email" id="f-email" value="${s ? escapeHtml(s.email) : ''}" placeholder="name@ridgeview.edu">
+      <div class="field-error">Enter a valid email address.</div>
+    </div>
+    <div class="field">
+      <label>Enroll in Courses</label>
+      <div class="checklist" id="f-courses">${checks}</div>
+    </div>
+  `;
+}
+
+function openStudentModal(id=null){
+  const s = id ? state.students.find(x=>x.id===id) : null;
+  openModal(s ? 'Edit Student' : 'New Student', studentFormHtml(s), () => {
+    clearErrors();
+    const roll = $('#f-roll').value.trim();
+    const name = $('#f-name').value.trim();
+    const email = $('#f-email').value.trim();
+    const enrolled = $$('#f-courses input:checked').map(i => i.value);
+    let ok = true;
+    if(!roll){ markError('roll','Roll number is required.'); ok=false; }
+    if(!name){ markError('name','Name is required.'); ok=false; }
+    if(!email || !/^\S+@\S+\.\S+$/.test(email)){ markError('email','Enter a valid email address.'); ok=false; }
+    if(!ok) return;
+    if(s){
+      s.roll=roll; s.name=name; s.email=email; s.enrolled=enrolled;
+      logActivity('Student', `Updated ${name}`);
+      toast('Student updated.');
+    } else {
+      state.students.push({ id: uid('s'), roll, name, email, enrolled });
+      logActivity('Student', `Enrolled ${name}`);
+      toast('Student added.');
+    }
+    closeModal();
+    renderAll();
+  });
+}
+
+function deleteStudent(id){
+  const s = state.students.find(x=>x.id===id);
+  openConfirm(`Remove "${s.name}" from the roster? Their results will also be deleted.`, () => {
+    state.results = state.results.filter(r => r.studentId !== id);
+    state.students = state.students.filter(x => x.id !== id);
+    logActivity('Student', `Removed ${s.name}`);
+    toast('Student removed.', true);
+    renderAll();
+  });
+}
+
+function renderStudents(){
+  const q = ($('#studentSearch').value || '').toLowerCase();
+  const body = $('#studentsBody');
+  const rows = state.students.filter(s =>
+    s.name.toLowerCase().includes(q) || s.roll.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+  );
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="5">No students found. Try “+ New Student”.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(s => {
+    const courseTags = s.enrolled.map(cid => {
+      const c = state.courses.find(x=>x.id===cid);
+      return c ? `<span class="pill pill-ink" style="margin:2px;">${escapeHtml(c.code)}</span>` : '';
+    }).join('') || '<span class="cell-muted">Not enrolled</span>';
+    return `
+      <tr>
+        <td class="mono">${escapeHtml(s.roll)}</td>
+        <td class="cell-strong">${escapeHtml(s.name)}</td>
+        <td class="cell-muted">${escapeHtml(s.email)}</td>
+        <td>${courseTags}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" title="Edit" onclick="openStudentModal('${s.id}')">✎</button>
+            <button class="icon-btn danger" title="Delete" onclick="deleteStudent('${s.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+$('#addStudentBtn').addEventListener('click', () => openStudentModal());
+$('#studentSearch').addEventListener('input', renderStudents);
+
+/* ============================ FACULTY ============================ */
+function facultyFormHtml(f){
+  return `
+    <div class="field" id="field-name">
+      <label>Full Name</label>
+      <input type="text" id="f-name" value="${f ? escapeHtml(f.name) : ''}" placeholder="e.g. Dr. Jane Okafor">
+      <div class="field-error">Name is required.</div>
+    </div>
+    <div class="field" id="field-dept">
+      <label>Department</label>
+      <input type="text" id="f-dept" value="${f ? escapeHtml(f.dept) : ''}" placeholder="e.g. Computer Science">
+      <div class="field-error">Department is required.</div>
+    </div>
+    <div class="field" id="field-email">
+      <label>Email</label>
+      <input type="email" id="f-email" value="${f ? escapeHtml(f.email) : ''}" placeholder="name@ridgeview.edu">
+      <div class="field-error">Enter a valid email address.</div>
+    </div>
+  `;
+}
+
+function openFacultyModal(id=null){
+  const f = id ? state.faculty.find(x=>x.id===id) : null;
+  openModal(f ? 'Edit Faculty' : 'New Faculty', facultyFormHtml(f), () => {
+    clearErrors();
+    const name = $('#f-name').value.trim();
+    const dept = $('#f-dept').value.trim();
+    const email = $('#f-email').value.trim();
+    let ok = true;
+    if(!name){ markError('name','Name is required.'); ok=false; }
+    if(!dept){ markError('dept','Department is required.'); ok=false; }
+    if(!email || !/^\S+@\S+\.\S+$/.test(email)){ markError('email','Enter a valid email address.'); ok=false; }
+    if(!ok) return;
+    if(f){
+      f.name=name; f.dept=dept; f.email=email;
+      logActivity('Faculty', `Updated ${name}`);
+      toast('Faculty updated.');
+    } else {
+      state.faculty.push({ id: uid('f'), name, dept, email });
+      logActivity('Faculty', `Added ${name}`);
+      toast('Faculty added.');
+    }
+    closeModal();
+    renderAll();
+  });
+}
+
+function deleteFaculty(id){
+  const f = state.faculty.find(x=>x.id===id);
+  const teaching = state.courses.filter(c => c.facultyId === id).length;
+  openConfirm(`Remove "${f.name}" from the directory?${teaching ? ` ${teaching} course(s) will become unassigned.` : ''}`, () => {
+    state.courses.forEach(c => { if(c.facultyId === id) c.facultyId = null; });
+    state.faculty = state.faculty.filter(x => x.id !== id);
+    logActivity('Faculty', `Removed ${f.name}`);
+    toast('Faculty removed.', true);
+    renderAll();
+  });
+}
+
+function renderFaculty(){
+  const q = ($('#facultySearch').value || '').toLowerCase();
+  const body = $('#facultyBody');
+  const rows = state.faculty.filter(f =>
+    f.name.toLowerCase().includes(q) || f.dept.toLowerCase().includes(q) || f.email.toLowerCase().includes(q)
+  );
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="5">No faculty found. Try “+ New Faculty”.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(f => {
+    const courses = state.courses.filter(c => c.facultyId === f.id);
+    const tags = courses.map(c => `<span class="pill pill-brass" style="margin:2px;">${escapeHtml(c.code)}</span>`).join('') || '<span class="cell-muted">No courses assigned</span>';
+    return `
+      <tr>
+        <td class="cell-strong">${escapeHtml(f.name)}</td>
+        <td>${escapeHtml(f.dept)}</td>
+        <td class="cell-muted">${escapeHtml(f.email)}</td>
+        <td>${tags}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" title="Edit" onclick="openFacultyModal('${f.id}')">✎</button>
+            <button class="icon-btn danger" title="Delete" onclick="deleteFaculty('${f.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+$('#addFacultyBtn').addEventListener('click', () => openFacultyModal());
+$('#facultySearch').addEventListener('input', renderFaculty);
+
+/* ============================ ASSIGNMENTS ============================ */
+function assignmentFormHtml(a){
+  const courseOptions = state.courses.map(c => `<option value="${c.id}" ${a && a.courseId===c.id ? 'selected':''}>${escapeHtml(c.code)} — ${escapeHtml(c.name)}</option>`).join('');
+  return `
+    <div class="field" id="field-course">
+      <label>Course</label>
+      <select id="f-course">
+        <option value="">— Select a course —</option>
+        ${courseOptions}
+      </select>
+      <div class="field-error">Please select a course.</div>
+    </div>
+    <div class="field" id="field-title">
+      <label>Assignment Title</label>
+      <input type="text" id="f-title" value="${a ? escapeHtml(a.title) : ''}" placeholder="e.g. Problem Set 3">
+      <div class="field-error">Title is required.</div>
+    </div>
+    <div class="field" id="field-due">
+      <label>Due Date</label>
+      <input type="date" id="f-due" value="${a ? a.due : ''}">
+      <div class="field-error">Please choose a due date.</div>
+    </div>
+    <div class="field" id="field-max">
+      <label>Maximum Marks</label>
+      <input type="number" id="f-max" min="1" value="${a ? a.max : 100}">
+      <div class="field-error">Enter a valid maximum mark.</div>
+    </div>
+  `;
+}
+
+function openAssignmentModal(id=null){
+  const a = id ? state.assignments.find(x=>x.id===id) : null;
+  if(state.courses.length === 0){ toast('Create a course first.', true); return; }
+  openModal(a ? 'Edit Assignment' : 'New Assignment', assignmentFormHtml(a), () => {
+    clearErrors();
+    const courseId = $('#f-course').value;
+    const title = $('#f-title').value.trim();
+    const due = $('#f-due').value;
+    const max = parseInt($('#f-max').value, 10);
+    let ok = true;
+    if(!courseId){ markError('course','Please select a course.'); ok=false; }
+    if(!title){ markError('title','Title is required.'); ok=false; }
+    if(!due){ markError('due','Please choose a due date.'); ok=false; }
+    if(!max || max < 1){ markError('max','Enter a valid maximum mark.'); ok=false; }
+    if(!ok) return;
+    if(a){
+      a.courseId=courseId; a.title=title; a.due=due; a.max=max;
+      logActivity('Assignment', `Updated ${title}`);
+      toast('Assignment updated.');
+    } else {
+      state.assignments.push({ id: uid('a'), courseId, title, due, max });
+      logActivity('Assignment', `Created ${title}`);
+      toast('Assignment created.');
+    }
+    closeModal();
+    renderAll();
+  });
+}
+
+function deleteAssignment(id){
+  const a = state.assignments.find(x=>x.id===id);
+  openConfirm(`Delete "${a.title}"? Related results will also be removed.`, () => {
+    state.results = state.results.filter(r => r.assignmentId !== id);
+    state.assignments = state.assignments.filter(x => x.id !== id);
+    logActivity('Assignment', `Removed ${a.title}`);
+    toast('Assignment deleted.', true);
+    renderAll();
+  });
+}
+
+function renderAssignments(){
+  const q = ($('#assignmentSearch').value || '').toLowerCase();
+  const body = $('#assignmentsBody');
+  const rows = state.assignments.filter(a =>
+    a.title.toLowerCase().includes(q) || courseName(a.courseId).toLowerCase().includes(q)
+  );
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No assignments found. Try “+ New Assignment”.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(a => {
+    const totalEnrolled = studentEnrolledInCourse(a.courseId).length;
+    const gradedCount = state.results.filter(r => r.assignmentId === a.id).length;
+    return `
+      <tr>
+        <td class="cell-strong">${escapeHtml(a.title)}</td>
+        <td class="mono">${escapeHtml(courseName(a.courseId))}</td>
+        <td class="mono">${fmtDate(a.due)}</td>
+        <td class="mono">${a.max}</td>
+        <td><span class="pill ${gradedCount===totalEnrolled && totalEnrolled>0 ? 'pill-success':'pill-ink'}">${gradedCount}/${totalEnrolled}</span></td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" title="Edit" onclick="openAssignmentModal('${a.id}')">✎</button>
+            <button class="icon-btn danger" title="Delete" onclick="deleteAssignment('${a.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+$('#addAssignmentBtn').addEventListener('click', () => openAssignmentModal());
+$('#assignmentSearch').addEventListener('input', renderAssignments);
+
+/* ============================ RESULTS ============================ */
+function populateWbCourses(){
+  const sel = $('#wbCourse');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">— Select a course —</option>` +
+    state.courses.map(c => `<option value="${c.id}">${escapeHtml(c.code)} — ${escapeHtml(c.name)}</option>`).join('');
+  if(prev && state.courses.some(c=>c.id===prev)) sel.value = prev;
+}
+function populateWbAssignments(){
+  const courseId = $('#wbCourse').value;
+  const sel = $('#wbAssignment');
+  const opts = state.assignments.filter(a => a.courseId === courseId);
+  sel.innerHTML = `<option value="">— Select an assignment —</option>` +
+    opts.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (max ${a.max})</option>`).join('');
+  renderWorkbenchTable();
+}
+
+function renderWorkbenchTable(){
+  const courseId = $('#wbCourse').value;
+  const assignmentId = $('#wbAssignment').value;
+  const body = $('#wbBody');
+  if(!courseId || !assignmentId){
+    body.innerHTML = `<tr class="empty-row"><td colspan="5">Select a course and assignment to begin grading.</td></tr>`;
+    return;
+  }
+  const assignment = state.assignments.find(a=>a.id===assignmentId);
+  const roster = studentEnrolledInCourse(courseId);
+  if(roster.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="5">No students are enrolled in this course yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = roster.map(s => {
+    const existing = state.results.find(r => r.studentId===s.id && r.assignmentId===assignmentId);
+    const marks = existing ? existing.marks : '';
+    const pct = existing ? Math.round((existing.marks/assignment.max)*100) : null;
+    const g = pct !== null ? gradeFor(pct) : null;
+    return `
+      <tr data-student="${s.id}">
+        <td class="mono">${escapeHtml(s.roll)}</td>
+        <td class="cell-strong">${escapeHtml(s.name)}</td>
+        <td><input type="number" class="marks-input wb-marks-field" min="0" max="${assignment.max}" value="${marks}" data-student="${s.id}"></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="pct-bar-track"><div class="pct-bar-fill" style="width:${pct ?? 0}%;"></div></div>
+            <span class="mono cell-muted wb-pct" data-student="${s.id}">${pct !== null ? pct+'%' : '—'}</span>
+          </div>
+        </td>
+        <td class="wb-grade" data-student="${s.id}">${g ? `<span class="stamp ${g.cls}">${g.letter}</span>` : '<span class="cell-muted">—</span>'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  $$('.wb-marks-field').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const val = parseFloat(inp.value);
+      const sid = inp.dataset.student;
+      const pctCell = $(`.wb-pct[data-student="${sid}"]`);
+      const gradeCell = $(`.wb-grade[data-student="${sid}"]`);
+      const fillBar = inp.closest('tr').querySelector('.pct-bar-fill');
+      if(isNaN(val)){
+        pctCell.textContent = '—'; gradeCell.innerHTML = '<span class="cell-muted">—</span>'; fillBar.style.width='0%';
+        return;
+      }
+      const pct = Math.max(0, Math.min(100, Math.round((val/assignment.max)*100)));
+      pctCell.textContent = pct + '%';
+      fillBar.style.width = pct + '%';
+      const g = gradeFor(pct);
+      gradeCell.innerHTML = `<span class="stamp ${g.cls}">${g.letter}</span>`;
+    });
+  });
+}
+
+function saveWorkbenchResults(){
+  const courseId = $('#wbCourse').value;
+  const assignmentId = $('#wbAssignment').value;
+  if(!courseId || !assignmentId){ toast('Select a course and assignment first.', true); return; }
+  const assignment = state.assignments.find(a=>a.id===assignmentId);
+  let savedCount = 0;
+  $$('.wb-marks-field').forEach(inp => {
+    const sid = inp.dataset.student;
+    const val = parseFloat(inp.value);
+    if(isNaN(val) || inp.value === '') return;
+    const clamped = Math.max(0, Math.min(assignment.max, val));
+    let existing = state.results.find(r => r.studentId===sid && r.assignmentId===assignmentId);
+    if(existing){ existing.marks = clamped; }
+    else { state.results.push({ id: uid('r'), studentId: sid, assignmentId, marks: clamped }); }
+    savedCount++;
+  });
+  logActivity('Result', `Graded ${savedCount} student(s) for "${assignment.title}"`);
+  toast(`Saved results for ${savedCount} student(s).`);
+  renderAll();
+}
+$('#saveResultsBtn').addEventListener('click', saveWorkbenchResults);
+$('#wbCourse').addEventListener('change', populateWbAssignments);
+$('#wbAssignment').addEventListener('change', renderWorkbenchTable);
+
+function deleteResult(id){
+  const r = state.results.find(x=>x.id===id);
+  openConfirm('Delete this result entry?', () => {
+    state.results = state.results.filter(x => x.id !== id);
+    toast('Result deleted.', true);
+    renderAll();
+  });
+}
+
+function renderResultsLedger(){
+  const q = ($('#resultSearch').value || '').toLowerCase();
+  const body = $('#resultsBody');
+  const rows = state.results.map(r => {
+    const s = state.students.find(x=>x.id===r.studentId);
+    const a = state.assignments.find(x=>x.id===r.assignmentId);
+    return { r, s, a };
+  }).filter(({s,a}) => s && a).filter(({s,a}) =>
+    s.name.toLowerCase().includes(q) || a.title.toLowerCase().includes(q) || courseName(a.courseId).toLowerCase().includes(q)
+  );
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="6">No results recorded yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(({r,s,a}) => {
+    const pct = Math.round((r.marks/a.max)*100);
+    const g = gradeFor(pct);
+    return `
+      <tr>
+        <td class="cell-strong">${escapeHtml(s.name)}</td>
+        <td class="mono">${escapeHtml(courseName(a.courseId))}</td>
+        <td>${escapeHtml(a.title)}</td>
+        <td class="mono">${r.marks} / ${a.max}</td>
+        <td><span class="stamp ${g.cls}" style="width:36px;height:36px;font-size:13px;">${g.letter}</span></td>
+        <td><button class="icon-btn danger" title="Delete" onclick="deleteResult('${r.id}')">🗑</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+$('#resultSearch').addEventListener('input', renderResultsLedger);
+
+function renderResultsSection(){
+  populateWbCourses();
+  if($('#wbCourse').value){ populateWbAssignments(); } else { renderWorkbenchTable(); }
+  renderResultsLedger();
+}
+
+/* ============================ DASHBOARD ============================ */
+function renderDashboard(){
+  const totalStudents = state.students.length;
+  const totalCourses = state.courses.length;
+  const totalFaculty = state.faculty.length;
+  const pendingGrading = state.assignments.reduce((sum, a) => {
+    const enrolled = studentEnrolledInCourse(a.courseId).length;
+    const graded = state.results.filter(r => r.assignmentId === a.id).length;
+    return sum + Math.max(0, enrolled - graded);
+  }, 0);
+
+  $('#statGrid').innerHTML = `
+    <div class="stat-card"><div class="lbl">Total Courses</div><div class="num">${totalCourses}</div></div>
+    <div class="stat-card"><div class="lbl">Total Students</div><div class="num">${totalStudents}</div></div>
+    <div class="stat-card"><div class="lbl">Faculty Members</div><div class="num">${totalFaculty}</div></div>
+    <div class="stat-card"><div class="lbl">Pending Grading</div><div class="num">${pendingGrading}</div></div>
+  `;
+
+  const body = $('#recentBody');
+  if(state.activity.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="3">No activity yet — start by adding a course, student, or faculty member.</td></tr>`;
+    return;
+  }
+  body.innerHTML = state.activity.map(e => `
+    <tr>
+      <td><span class="pill pill-brass">${escapeHtml(e.type)}</span></td>
+      <td>${escapeHtml(e.detail)}</td>
+      <td class="mono cell-muted">${fmtDateTime(e.ts)}</td>
+    </tr>
+  `).join('');
+}
+
+/* ============================ RENDER ALL ============================ */
+function renderAll(){
+  renderDashboard();
+  renderCourses();
+  renderStudents();
+  renderFaculty();
+  renderAssignments();
+  renderResultsSection();
+}
+
+renderAll();
+</script>
+</body>
+</html>
